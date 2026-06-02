@@ -127,10 +127,13 @@ public class JellyseerrSessionService
             using var handler = new HttpClientHandler
             {
                 CookieContainer = cookieContainer,
-                UseCookies = true
+                UseCookies = true,
+                AllowAutoRedirect = false
             };
             using var client = new HttpClient(handler);
             client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestHeaders.TryAddWithoutValidation(
+                "User-Agent", "Moonfin-Server");
 
             var isLocal = string.Equals(authType, "local", StringComparison.OrdinalIgnoreCase);
             var authEndpoint = isLocal
@@ -149,12 +152,28 @@ public class JellyseerrSessionService
             var csrfToken = await FetchCsrfTokenAsync(client, jellyseerrUrl, cookieContainer);
 
             var request = new HttpRequestMessage(HttpMethod.Post, authEndpoint) { Content = content };
+            var originValue = new Uri(jellyseerrUrl).GetLeftPart(UriPartial.Authority);
+            request.Headers.TryAddWithoutValidation("Origin", originValue);
+            request.Headers.TryAddWithoutValidation("Referer", jellyseerrUrl.TrimEnd('/') + "/");
             if (!string.IsNullOrEmpty(csrfToken))
             {
                 request.Headers.Add("X-CSRF-Token", csrfToken);
             }
 
             var response = await client.SendAsync(request);
+
+            if ((int)response.StatusCode is >= 300 and < 400)
+            {
+                _logger.LogWarning(
+                    "Seerr auth redirected ({Status} -> {Location}) for user {Username}. " +
+                    "Check the Seerr URL configured in Moonfin matches the public address (scheme + sub-path).",
+                    response.StatusCode, response.Headers.Location?.ToString(), username);
+                return new JellyseerrAuthResult
+                {
+                    Success = false,
+                    Error = "Seerr redirected the login request. Verify the Seerr URL in Moonfin matches its public address (https and any sub-path)."
+                };
+            }
 
             if (!response.IsSuccessStatusCode)
             {
