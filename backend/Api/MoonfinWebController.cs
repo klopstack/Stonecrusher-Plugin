@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,9 @@ namespace Moonfin.Server.Api;
 public class MoonfinWebController : ControllerBase
 {
     private readonly Assembly _assembly;
+    private static readonly Regex BaseHrefRegex = new Regex(
+        "<base\\s+href=\"[^\"]*\"\\s*/?>",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly IReadOnlyDictionary<string, string> ContentTypes =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -52,8 +56,10 @@ public class MoonfinWebController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult RedirectLegacyPluginJs()
     {
-        const string script =
-            "(function(){if(window.location.pathname.toLowerCase().indexOf('/moonfin/web/')===-1){window.location.href='/Moonfin/Web/';}})();";
+        var target = ResolveWebBaseHref();
+        var script =
+            "(function(){if(window.location.pathname.toLowerCase().indexOf('/moonfin/web/')===-1){window.location.href='"
+            + target + "';}})();";
         return Content(script, "application/javascript");
     }
 
@@ -140,6 +146,11 @@ public class MoonfinWebController : ControllerBase
 
         if (System.IO.File.Exists(fullPath))
         {
+            if (IsIndexHtml(fullPath))
+            {
+                return ServeIndexHtml(fullPath);
+            }
+
             return PhysicalFile(fullPath, GetContentType(fullPath));
         }
 
@@ -148,7 +159,7 @@ public class MoonfinWebController : ControllerBase
             var nestedIndexPath = Path.Combine(fullPath, "index.html");
             if (System.IO.File.Exists(nestedIndexPath))
             {
-                return PhysicalFile(nestedIndexPath, "text/html; charset=utf-8");
+                return ServeIndexHtml(nestedIndexPath);
             }
         }
 
@@ -163,7 +174,7 @@ public class MoonfinWebController : ControllerBase
             return NotFound(new { Error = "Moonfin web entrypoint missing", Path = indexPath });
         }
 
-        return PhysicalFile(indexPath, "text/html; charset=utf-8");
+        return ServeIndexHtml(indexPath);
     }
 
     private static string? NormalizeOptionalText(string? value)
@@ -180,6 +191,45 @@ public class MoonfinWebController : ControllerBase
     {
         var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}".Trim();
         return baseUrl.TrimEnd('/');
+    }
+
+    /// <summary>
+    /// Resolves the absolute path the web app is served from, including any Jellyfin
+    /// reverse-proxy sub-path prefix (Request.PathBase). Used to rewrite the index.html
+    /// base href so the app works under both subdomain and sub-path hosting.
+    /// </summary>
+    private string ResolveWebBaseHref()
+    {
+        var pathBase = Request.PathBase.Value?.TrimEnd('/') ?? string.Empty;
+        return $"{pathBase}/Moonfin/Web/";
+    }
+
+    private static bool IsIndexHtml(string filePath)
+    {
+        return string.Equals(
+            Path.GetFileName(filePath),
+            "index.html",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private IActionResult ServeIndexHtml(string indexPath)
+    {
+        var pathBase = Request.PathBase.Value?.TrimEnd('/') ?? string.Empty;
+        if (pathBase.Length == 0)
+        {
+            // No reverse-proxy sub-path: the build-time base href is already correct,
+            // so serve the file unchanged (identical to standard subdomain/root hosting).
+            return PhysicalFile(indexPath, "text/html; charset=utf-8");
+        }
+
+        var html = System.IO.File.ReadAllText(indexPath);
+        html = BaseHrefRegex.Replace(html, _ => $"<base href=\"{pathBase}/Moonfin/Web/\">");
+
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
+
+        return Content(html, "text/html; charset=utf-8");
     }
 
     private static string ResolveDiscoveryProxyUrl(string runtimeBaseUrl)
