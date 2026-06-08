@@ -36,6 +36,7 @@ public class MoonfinController : ControllerBase
     private static readonly SemaphoreSlim _variantLock = new(1, 1);
     private static readonly Type? _userManagerType = Type.GetType("MediaBrowser.Controller.Library.IUserManager, MediaBrowser.Controller");
     private static readonly MethodInfo? _userManagerGetUserById = _userManagerType?.GetMethod("GetUserById", [typeof(Guid)]);
+    private static readonly PropertyInfo? _userManagerUsersProperty = _userManagerType?.GetProperty("Users");
     private static readonly MethodInfo? _internalItemsQuerySetUser = typeof(InternalItemsQuery).GetMethod("SetUser", BindingFlags.Public | BindingFlags.Instance);
     private static readonly PropertyInfo? _internalItemsQueryUserProperty = typeof(InternalItemsQuery).GetProperty(nameof(InternalItemsQuery.User), BindingFlags.Public | BindingFlags.Instance);
     private static readonly MethodInfo? _baseItemIsVisible = typeof(BaseItem)
@@ -324,15 +325,18 @@ public class MoonfinController : ControllerBase
     }
 
     /// <summary>
-    /// Pushes configured admin default settings to all existing users (admin only).
-    /// Only non-null default fields are applied.
+    /// Applies the configured admin defaults to all users (admin only).
+    /// When <paramref name="overwrite"/> is false, defaults are merged into each existing
+    /// user's global profile, keeping their other values and device overrides. When true,
+    /// every server user is reset to a clean global-only profile equal to the defaults
+    /// (including users with no file), and orphaned files for deleted users are removed.
     /// </summary>
     [HttpPost("Admin/PushDefaults")]
     [Authorize(Policy = "RequiresElevation")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<ActionResult> PushDefaultsToAllUsers()
+    public async Task<ActionResult> ApplyDefaultsToAllUsers([FromQuery] bool overwrite = false)
     {
         var config = MoonfinPlugin.Instance?.Configuration;
 
@@ -347,10 +351,73 @@ public class MoonfinController : ControllerBase
             return BadRequest(new { error = "No default user settings configured" });
         }
 
-        var usersUpdated = await _settingsService.PushDefaultsToAllUsersAsync(defaults);
+        int usersAffected;
+        var orphansDeleted = 0;
+
+        if (overwrite)
+        {
+            var serverUserIds = GetAllServerUserIds();
+            if (serverUserIds == null)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "User manager unavailable" });
+            }
+
+            (usersAffected, orphansDeleted) = await _settingsService.ResetAllUsersToDefaultsAsync(
+                defaults,
+                serverUserIds,
+                deleteOrphans: true);
+        }
+        else
+        {
+            usersAffected = await _settingsService.MergeDefaultsToAllUsersAsync(defaults);
+        }
+
         var liveRefreshDeliveries = _settingsService.BroadcastSystemEvent("settingsUpdated");
 
-        return Ok(new { success = true, usersUpdated, liveRefreshDeliveries });
+        return Ok(new { success = true, overwrite, usersAffected, orphansDeleted, liveRefreshDeliveries });
+    }
+
+    /// <summary>
+    /// Applies the configured admin defaults to a single user (admin only).
+    /// When <paramref name="overwrite"/> is false, defaults are merged into the user's
+    /// global profile, keeping their other values and device overrides. When true, the
+    /// user is reset to a clean global-only profile equal to the defaults.
+    /// </summary>
+    [HttpPost("Admin/PushDefaults/{userId}")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult> ApplyDefaultsToUser([FromRoute] Guid userId, [FromQuery] bool overwrite = false)
+    {
+        var config = MoonfinPlugin.Instance?.Configuration;
+
+        if (config?.EnableSettingsSync != true)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Settings sync is disabled" });
+        }
+
+        var defaults = config.DefaultUserSettings;
+        if (defaults == null)
+        {
+            return BadRequest(new { error = "No default user settings configured" });
+        }
+
+        if (userId == Guid.Empty)
+        {
+            return BadRequest(new { error = "A valid userId is required" });
+        }
+
+        if (overwrite)
+        {
+            await _settingsService.ResetUserToDefaultsAsync(userId, defaults);
+        }
+        else
+        {
+            await _settingsService.MergeDefaultsToUserAsync(userId, defaults);
+        }
+
+        return Ok(new { success = true, overwrite });
     }
 
     [HttpPost("Broadcast")]
@@ -975,6 +1042,36 @@ public class MoonfinController : ControllerBase
         }
 
         return _userManagerGetUserById.Invoke(userManager, [userId]);
+    }
+
+    private List<Guid>? GetAllServerUserIds()
+    {
+        if (_userManagerType == null || _userManagerUsersProperty == null)
+        {
+            return null;
+        }
+
+        var userManager = HttpContext?.RequestServices.GetService(_userManagerType);
+        if (userManager == null)
+        {
+            return null;
+        }
+
+        if (_userManagerUsersProperty.GetValue(userManager) is not IEnumerable<object> users)
+        {
+            return null;
+        }
+
+        var ids = new List<Guid>();
+        foreach (var user in users)
+        {
+            if (user?.GetType().GetProperty("Id")?.GetValue(user) is Guid id)
+            {
+                ids.Add(id);
+            }
+        }
+
+        return ids;
     }
 
     private static bool TryApplyQueryUser(InternalItemsQuery query, object queryUser)

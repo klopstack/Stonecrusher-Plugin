@@ -479,7 +479,124 @@ public class MoonfinSettingsService
         return existing;
     }
 
-    public async Task<int> PushDefaultsToAllUsersAsync(MoonfinSettingsProfile defaults)
+    /// <summary>
+    /// Resets every server user to a clean settings file containing only a global profile
+    /// equal to the supplied admin defaults. Existing device profiles and personal
+    /// customizations are discarded, and users without a settings file get one created.
+    /// When <paramref name="deleteOrphans"/> is true, settings files belonging to users
+    /// that no longer exist on the server are removed.
+    /// </summary>
+    public async Task<(int usersReset, int orphansDeleted)> ResetAllUsersToDefaultsAsync(
+        MoonfinSettingsProfile defaults,
+        IReadOnlyCollection<Guid> serverUserIds,
+        bool deleteOrphans)
+    {
+        ArgumentNullException.ThrowIfNull(defaults);
+        ArgumentNullException.ThrowIfNull(serverUserIds);
+
+        EnsureDataDirectory();
+
+        var globalProfile = CloneProfile(defaults);
+        var usersReset = 0;
+        foreach (var userId in serverUserIds)
+        {
+            try
+            {
+                await WriteGlobalOnlyAsync(userId, globalProfile, "admin-reset-all");
+                usersReset++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reset settings for user {UserId}", userId);
+            }
+        }
+
+        var orphansDeleted = 0;
+        if (deleteOrphans)
+        {
+            var keep = serverUserIds as HashSet<Guid> ?? new HashSet<Guid>(serverUserIds);
+            foreach (var filePath in Directory.EnumerateFiles(_dataPath, "*.json", SearchOption.TopDirectoryOnly))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(filePath);
+                if (!Guid.TryParse(fileName, out var fileUserId) || keep.Contains(fileUserId))
+                {
+                    continue;
+                }
+
+                await _lock.WaitAsync();
+                try
+                {
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                        orphansDeleted++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete orphan settings file {Path}", filePath);
+                }
+                finally
+                {
+                    _lock.Release();
+                }
+            }
+        }
+
+        return (usersReset, orphansDeleted);
+    }
+
+    /// <summary>
+    /// Resets a single user to a clean settings file containing only a global profile
+    /// equal to the supplied admin defaults, discarding their existing profiles.
+    /// </summary>
+    public async Task ResetUserToDefaultsAsync(Guid userId, MoonfinSettingsProfile defaults)
+    {
+        ArgumentNullException.ThrowIfNull(defaults);
+
+        await WriteGlobalOnlyAsync(userId, CloneProfile(defaults), "admin-reset-user");
+        NotifySettingsChanged(userId);
+    }
+
+    private async Task WriteGlobalOnlyAsync(Guid userId, MoonfinSettingsProfile globalProfile, string clientId)
+    {
+        var settings = new MoonfinUserSettings
+        {
+            SchemaVersion = 2,
+            SyncEnabled = true,
+            Global = globalProfile,
+            LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            LastUpdatedBy = clientId,
+        };
+
+        var filePath = GetUserSettingsPath(userId);
+
+        await _lock.WaitAsync();
+        try
+        {
+            var json = JsonSerializer.Serialize(settings, _jsonOptions);
+            await File.WriteAllTextAsync(filePath, json);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private MoonfinSettingsProfile CloneProfile(MoonfinSettingsProfile source)
+    {
+        var json = JsonSerializer.Serialize(source, _jsonOptions);
+        return JsonSerializer.Deserialize<MoonfinSettingsProfile>(json, _jsonOptions)
+            ?? new MoonfinSettingsProfile();
+    }
+
+    /// <summary>
+    /// Merges the supplied admin defaults into the global profile of every user that
+    /// already has a settings file. Only fields set on the defaults are applied; each
+    /// user's other global values and device profile overrides are preserved. Users
+    /// without a settings file are not touched (they already resolve to admin defaults).
+    /// </summary>
+    public async Task<int> MergeDefaultsToAllUsersAsync(MoonfinSettingsProfile defaults)
     {
         ArgumentNullException.ThrowIfNull(defaults);
 
@@ -501,21 +618,37 @@ public class MoonfinSettingsService
 
             try
             {
-                  await SaveProfileAsync(
-                      userId,
-                      "global",
-                      defaults,
-                      "admin-default-push",
-                      notifySettingsChanged: false);
+                await SaveProfileAsync(
+                    userId,
+                    "global",
+                    defaults,
+                    "admin-default-merge",
+                    notifySettingsChanged: false);
                 usersUpdated++;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to push admin defaults for user {UserId}", userId);
+                _logger.LogError(ex, "Failed to merge admin defaults for user {UserId}", userId);
             }
         }
 
         return usersUpdated;
+    }
+
+    /// <summary>
+    /// Merges the supplied admin defaults into a single user's global profile, keeping
+    /// their other values and device profile overrides.
+    /// </summary>
+    public async Task MergeDefaultsToUserAsync(Guid userId, MoonfinSettingsProfile defaults)
+    {
+        ArgumentNullException.ThrowIfNull(defaults);
+
+        if (!HasAnyProfileValues(defaults))
+        {
+            return;
+        }
+
+        await SaveProfileAsync(userId, "global", defaults, "admin-default-merge");
     }
 
     private static bool HasAnyProfileValues(MoonfinSettingsProfile profile)

@@ -617,20 +617,46 @@
                     </div>
 
                     <div class="verticalSection">
-                        <h3 class="sectionTitle">Push Defaults To Existing Users</h3>
+                        <h3 class="sectionTitle">Apply Defaults To Users</h3>
                         <div class="fieldDescription" style="margin-bottom: 0.8em;">
-                            Apply the configured defaults above to every existing user now.
-                            Only fields that are set (not "Not set") will be merged into user global settings.
-                            Save your default settings first if you made changes.
+                            New users and any setting a user hasn't customized already use the defaults above automatically once you Save.
+                            Use these actions to also push the defaults onto users' existing settings. Save your changes first.
                         </div>
-                        <div style="background-color: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107; border-radius: 4px; padding: 0.8em 1.2em; margin-bottom: 1em; font-size: 0.9em;">
-                            <strong>Warning:</strong> This action updates existing user profiles immediately for all set fields.
-                            Device-specific profile overrides are not touched.
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input type="checkbox" id="OverwriteAllCheckbox" is="emby-checkbox" />
+                                <span>Overwrite each user's existing settings (full reset)</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Destructive. Erases every user's current settings (global and any desktop/mobile/TV overrides)
+                                and replaces them with a single global profile equal to the defaults. Also creates profiles for
+                                users who never customized and removes settings files for users that no longer exist on the server.
+                                When unchecked, the defaults are merged in without removing users' personal customizations.
+                            </div>
                         </div>
                         <button is="emby-button" type="button" id="PushDefaultsBtn" class="raised">
                             <span>Apply Defaults To All Users Now</span>
                         </button>
                         <div id="PushDefaultsResult" class="fieldDescription" style="display:none; margin-top:0.8em;"></div>
+
+                        <div class="fieldDescription" style="margin: 1.6em 0 0.4em;">
+                            Or apply the defaults to a single user:
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="SingleUserSelect">User</label>
+                            <select is="emby-select" id="SingleUserSelect"></select>
+                        </div>
+                        <div class="checkboxContainer">
+                            <label class="emby-checkbox-label">
+                                <input type="checkbox" id="OverwriteSingleCheckbox" is="emby-checkbox" />
+                                <span>Overwrite this user's existing settings (full reset)</span>
+                            </label>
+                        </div>
+                        <button is="emby-button" type="button" id="ApplySingleUserBtn" class="raised">
+                            <span>Apply To Selected User</span>
+                        </button>
+                        <div id="ApplySingleUserResult" class="fieldDescription" style="display:none; margin-top:0.8em;"></div>
                     </div>
 
                     <div class="verticalSection">
@@ -676,7 +702,7 @@
 
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block">
-                            <span>Save</span>
+                            <span>Save as Default</span>
                         </button>
                     </div>
                 </form>
@@ -898,7 +924,7 @@
                     makeDefaultSettingSubsections(defaultsContent);
                 }
 
-                var pushDefaultsSection = findSectionByTitle(form, 'Push Defaults To Existing Users');
+                var pushDefaultsSection = findSectionByTitle(form, 'Apply Defaults To Users');
                 if (pushDefaultsSection) {
                     makeCollapsibleSection(
                         pushDefaultsSection.section,
@@ -1712,7 +1738,12 @@
                 if (pushDefaultsBtn && !pushDefaultsBtn.dataset.bound) {
                     pushDefaultsBtn.dataset.bound = 'true';
                     pushDefaultsBtn.addEventListener('click', function() {
-                        if (!window.confirm('Apply the configured defaults to all existing users now?')) {
+                        var overwrite = !!(document.querySelector('#OverwriteAllCheckbox') || {}).checked;
+
+                        var confirmMsg = overwrite
+                            ? 'Reset ALL server users to the configured defaults?\n\nThis permanently erases every user\'s current Moonfin settings (including any device profile overrides) and replaces them with these defaults.'
+                            : 'Apply the configured defaults to all existing users?\n\nDefaults are merged into each user\'s settings without removing their personal customizations.';
+                        if (!window.confirm(confirmMsg)) {
                             return;
                         }
 
@@ -1726,18 +1757,21 @@
                         }
 
                         Dashboard.showLoadingMsg();
-                        fetch(serverUrl + '/Moonfin/Admin/PushDefaults', {
+                        fetch(serverUrl + '/Moonfin/Admin/PushDefaults?overwrite=' + (overwrite ? 'true' : 'false'), {
                             method: 'POST',
                             headers: headers,
                             body: '{}'
                         })
                             .then(parseJsonResponse)
                             .then(function(payload) {
-                                var usersUpdated = payload.usersUpdated != null ? payload.usersUpdated : payload.UsersUpdated;
+                                var usersAffected = payload.usersAffected != null ? payload.usersAffected : payload.UsersAffected;
+                                var orphansDeleted = payload.orphansDeleted != null ? payload.orphansDeleted : payload.OrphansDeleted;
                                 if (result) {
                                     result.style.display = '';
                                     result.style.color = '#52b54b';
-                                    result.textContent = 'Defaults applied to ' + (usersUpdated || 0) + ' user(s).';
+                                    result.textContent = overwrite
+                                        ? 'Reset ' + (usersAffected || 0) + ' user(s). Removed ' + (orphansDeleted || 0) + ' orphaned file(s).'
+                                        : 'Applied defaults to ' + (usersAffected || 0) + ' user(s).';
                                 }
                             })
                             .catch(function(error) {
@@ -1749,6 +1783,85 @@
                             })
                             .finally(function() {
                                 pushDefaultsBtn.disabled = false;
+                                Dashboard.hideLoadingMsg();
+                            });
+                    });
+                }
+
+                var singleUserSelect = document.querySelector('#SingleUserSelect');
+                if (singleUserSelect && ApiClient.getUsers) {
+                    ApiClient.getUsers().then(function(users) {
+                        var current = singleUserSelect.value;
+                        singleUserSelect.innerHTML = '';
+                        (users || []).forEach(function(user) {
+                            var option = document.createElement('option');
+                            option.value = user.Id;
+                            option.textContent = user.Name;
+                            singleUserSelect.appendChild(option);
+                        });
+                        if (current) {
+                            singleUserSelect.value = current;
+                        }
+                    });
+                }
+
+                var applySingleUserBtn = document.querySelector('#ApplySingleUserBtn');
+                if (applySingleUserBtn && !applySingleUserBtn.dataset.bound) {
+                    applySingleUserBtn.dataset.bound = 'true';
+                    applySingleUserBtn.addEventListener('click', function() {
+                        var select = document.querySelector('#SingleUserSelect');
+                        var result = document.querySelector('#ApplySingleUserResult');
+                        var userId = select ? select.value : '';
+                        var userName = select && select.selectedOptions.length ? select.selectedOptions[0].textContent : '';
+
+                        if (!userId) {
+                            if (result) {
+                                result.style.display = '';
+                                result.style.color = '#d9534f';
+                                result.textContent = 'Select a user first.';
+                            }
+                            return;
+                        }
+
+                        var overwrite = !!(document.querySelector('#OverwriteSingleCheckbox') || {}).checked;
+                        var confirmMsg = overwrite
+                            ? 'Reset ' + (userName || 'this user') + ' to the configured defaults?\n\nThis permanently erases their current Moonfin settings and replaces them with these defaults.'
+                            : 'Apply the configured defaults to ' + (userName || 'this user') + '?\n\nDefaults are merged in without removing their personal customizations.';
+                        if (!window.confirm(confirmMsg)) {
+                            return;
+                        }
+
+                        var serverUrl = ApiClient.serverAddress ? ApiClient.serverAddress() : '';
+                        var headers = getMoonfinAuthHeaders();
+
+                        applySingleUserBtn.disabled = true;
+                        if (result) {
+                            result.style.display = 'none';
+                        }
+
+                        Dashboard.showLoadingMsg();
+                        fetch(serverUrl + '/Moonfin/Admin/PushDefaults/' + encodeURIComponent(userId) + '?overwrite=' + (overwrite ? 'true' : 'false'), {
+                            method: 'POST',
+                            headers: headers,
+                            body: '{}'
+                        })
+                            .then(parseJsonResponse)
+                            .then(function() {
+                                if (result) {
+                                    result.style.display = '';
+                                    result.style.color = '#52b54b';
+                                    result.textContent = (overwrite ? 'Reset ' : 'Applied defaults to ') + (userName || 'user') + '.';
+                                }
+                            })
+                            .catch(function(error) {
+                                if (result) {
+                                    result.style.display = '';
+                                    result.style.color = '#d9534f';
+                                    result.textContent = error && error.message ? error.message : 'Request failed. Check server logs.';
+                                }
+                            })
+                            .finally(function() {
+                                applySingleUserBtn.disabled = false;
                                 Dashboard.hideLoadingMsg();
                             });
                     });
