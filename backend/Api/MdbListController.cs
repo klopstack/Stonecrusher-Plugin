@@ -160,7 +160,33 @@ public class MdbListController : ControllerBase
         {
             if (ratingsBySource.TryGetValue(source, out var rating))
             {
-                result.Add(rating);
+                // Clone the rating object to prevent mutating the cached instance in memory
+                var ratingClone = new MdbListRating
+                {
+                    Source = rating.Source,
+                    Value = rating.Value,
+                    Score = rating.Score,
+                    Votes = rating.Votes,
+                    Url = rating.Url
+                };
+
+                // Letterboxd: MDBList's value field is on an ambiguous 0-10 scale.
+                // Normalize to the native 0-5 scale so all clients receive a correct value
+                // without mutating the underlying cache. Keep it as a double so clients
+                // can parse it cleanly and append "/5" for display.
+                if (string.Equals(ratingClone.Source, "letterboxd", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (ratingClone.Score.HasValue)
+                    {
+                        ratingClone.Value = Math.Round(ratingClone.Score.Value / 20.0, 1);
+                    }
+                    else if (ratingClone.Value.HasValue)
+                    {
+                        var val = ratingClone.Value.Value;
+                        ratingClone.Value = val > 5.0 ? Math.Round(val / 2.0, 1) : val;
+                    }
+                }
+                result.Add(ratingClone);
             }
         }
 
