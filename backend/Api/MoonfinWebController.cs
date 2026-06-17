@@ -159,6 +159,17 @@ public class MoonfinWebController : ControllerBase
             var nestedIndexPath = Path.Combine(fullPath, "index.html");
             if (System.IO.File.Exists(nestedIndexPath))
             {
+                // The request resolved to a directory's index (e.g. the theme
+                // editor at /theme). If the URL lacks a trailing slash, redirect
+                // to add one so the browser resolves the page's relative asset
+                // paths against the directory (.../theme/) instead of its parent
+                // (.../), which otherwise 404s its css/js/icons.
+                var urlPath = Request.Path.Value ?? string.Empty;
+                if (urlPath.Length > 0 && !urlPath.EndsWith('/'))
+                {
+                    return Redirect($"{Request.PathBase}{urlPath}/{Request.QueryString}");
+                }
+
                 return ServeIndexHtml(nestedIndexPath);
             }
         }
