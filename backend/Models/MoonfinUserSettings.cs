@@ -139,6 +139,8 @@ public class MoonfinUserSettings
     public bool? UserPinEnabled { get; set; }
     [JsonPropertyName("userPinSetupDeclined")]
     public bool? UserPinSetupDeclined { get; set; }
+    [JsonPropertyName("userPinLength")]
+    public int? UserPinLength { get; set; }
     [JsonPropertyName("clientSpecific")]
     public Dictionary<string, string>? ClientSpecific { get; set; }
 
@@ -149,7 +151,9 @@ public class MoonfinUserSettings
     public bool NeedsMigration => SchemaVersion < 2 && Global == null &&
         (NavbarEnabled != null || MediaBarEnabled != null || MdblistEnabled != null ||
          JellyseerrEnabled != null || TmdbEpisodeRatingsEnabled != null ||
-         NavbarPosition != null || DetailsPageEnabled != null);
+         NavbarPosition != null || DetailsPageEnabled != null ||
+         UserPinHash != null || UserPinEnabled != null || UserPinSetupDeclined != null ||
+         UserPinLength != null);
 
     /// <summary>
     /// Gets the device profile for a given device type, or null if not set.

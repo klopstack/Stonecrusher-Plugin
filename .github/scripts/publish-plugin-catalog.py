@@ -85,6 +85,16 @@ def catalog_version_from_tag(tag: str, assembly_version: str | None = None) -> s
     return tag
 
 
+def version_sort_key(version: str) -> tuple[int, ...]:
+    parts: list[int] = []
+    for part in version.split("."):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            parts.append(0)
+    return tuple(parts)
+
+
 def checksum_from_manifest(manifest_text: str | None, version: str) -> str:
     if not manifest_text:
         return ""
@@ -111,7 +121,7 @@ def commit_file(
         existing = github_request(
             token,
             "GET",
-            f"/repos/{owner}/{repo}/contents/{path}?ref=heads/{branch}",
+            f"/repos/{owner}/{repo}/contents/{path}?ref={branch}",
         )
     except HTTPError as error:
         if error.code != 404:
@@ -203,7 +213,7 @@ def build_repository(
         )
 
     versions.sort(
-        key=lambda item: item["version"],
+        key=lambda item: version_sort_key(str(item["version"])),
         reverse=True,
     )
 

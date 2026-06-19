@@ -28,29 +28,32 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Resolve release version
+        id: catalog
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          ASSEMBLY_VERSION=$(grep -oPm1 '(?<=<AssemblyVersion>)[^<]+' backend/Moonfin.Server.csproj)
+          SC_SUFFIX="${TAG##*-sc}"
+          IFS='.' read -r MA MI BU _ <<< "$ASSEMBLY_VERSION"
+          RELEASE_VERSION="${MA}.${MI}.${BU}.${SC_SUFFIX}"
+          echo "manifest_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build backend
-        run: dotnet build backend/Moonfin.Server.csproj -c Release
+        run: |
+          dotnet build backend/Moonfin.Server.csproj -c Release \
+            -p:AssemblyVersion=${{ steps.catalog.outputs.manifest_version }} \
+            -p:FileVersion=${{ steps.catalog.outputs.manifest_version }}
 
       - name: Package release ZIP
         id: package
         run: |
           set -euo pipefail
-          OUTPUT=$(bash .github/scripts/package-release.sh)
+          OUTPUT=$(bash .github/scripts/package-release.sh "${{ steps.catalog.outputs.manifest_version }}")
           echo "$OUTPUT"
           while IFS='=' read -r key value; do
             echo "${key}=${value}" >> "$GITHUB_OUTPUT"
           done <<< "$OUTPUT"
-
-      - name: Resolve catalog version
-        id: catalog
-        run: |
-          set -euo pipefail
-          TAG="${{ steps.tag.outputs.tag }}"
-          VERSION="${{ steps.package.outputs.version }}"
-          SC_SUFFIX="${TAG##*-sc}"
-          IFS='.' read -r MA MI BU _ <<< "$VERSION"
-          MANIFEST_VERSION="${MA}.${MI}.${BU}.${SC_SUFFIX}"
-          echo "manifest_version=$MANIFEST_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Ensure build.yaml
         run: |

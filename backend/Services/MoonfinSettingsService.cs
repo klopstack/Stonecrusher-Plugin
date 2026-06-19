@@ -66,6 +66,8 @@ public class MoonfinSettingsService
                 _logger.LogInformation("Migrating v1 settings to v2 for user {UserId}", userId);
                 settings = MigrateV1ToV2(settings);
 
+                MoonfinSensitiveSettings.StripFromUserSettings(settings);
+
                 // Persist the migrated version
                 var migratedJson = JsonSerializer.Serialize(settings, _jsonOptions);
                 await File.WriteAllTextAsync(filePath, migratedJson);
@@ -158,6 +160,8 @@ public class MoonfinSettingsService
                 finalSettings = settings;
             }
 
+            MoonfinSensitiveSettings.StripFromUserSettings(finalSettings);
+
             // Update metadata
             finalSettings.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             finalSettings.LastUpdatedBy = clientId ?? "unknown";
@@ -216,6 +220,8 @@ public class MoonfinSettingsService
             {
                 settings.SetProfile(profileName, profile);
             }
+
+            MoonfinSensitiveSettings.StripFromUserSettings(settings);
 
             // Update metadata
             settings.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -419,6 +425,7 @@ public class MoonfinSettingsService
         settings.UserPinHash = null;
         settings.UserPinEnabled = null;
         settings.UserPinSetupDeclined = null;
+        settings.UserPinLength = null;
         settings.ClientSpecific = null;
     }
 
@@ -588,6 +595,7 @@ public class MoonfinSettingsService
         await _lock.WaitAsync();
         try
         {
+            MoonfinSensitiveSettings.StripFromUserSettings(settings);
             var json = JsonSerializer.Serialize(settings, _jsonOptions);
             await File.WriteAllTextAsync(filePath, json);
         }
@@ -714,6 +722,7 @@ public class MoonfinSettingsService
         {
             var filePath = GetUserSettingsPath(userId);
             settings.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            MoonfinSensitiveSettings.StripFromUserSettings(settings);
             var json = JsonSerializer.Serialize(settings, _jsonOptions);
             await File.WriteAllTextAsync(filePath, json);
         }

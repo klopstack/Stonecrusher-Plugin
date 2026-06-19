@@ -53,13 +53,15 @@ These camelCase keys must remain supported in the plugin settings model:
 | `userPinEnabled` | `UserSettingPreferences.userPinEnabled` |
 | `userPinHash` | `UserSettingPreferences.userPinHash` |
 | `userPinSetupDeclined` | `UserSettingPreferences.userPinSetupDeclined` |
+| `userPinLength` | `UserSettingPreferences.userPinLength` |
 | `jellyseerrEnabled` | `JellyseerrPreferences.enabled` |
 | `jellyseerrApiKey` | `JellyseerrPreferences.apiKey` |
 | `jellyseerrBlockNsfw` | `JellyseerrPreferences.blockNsfw` |
 
-> **Note:** `userPinHash`, `userPinEnabled`, and `userPinSetupDeclined` are stored
-> per authenticated Jellyfin user. The TV client reads/writes them from per-user
-> local storage; the plugin must persist them per user on the server.
+> **Note:** `userPinHash`, `userPinEnabled`, `userPinSetupDeclined`, and
+> `userPinLength` are stored per authenticated Jellyfin user. The TV client
+> reads/writes them from per-user local storage; the plugin must persist them
+> per user on the server. Missing `userPinLength` is treated as `0`.
 
 ## Jellyseerr / Seerr proxy
 
