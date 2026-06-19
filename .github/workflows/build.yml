@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -58,80 +59,36 @@ jobs:
           name: build-results
           path: ${{ runner.temp }}/build-results/
 
-      - name: Read version from csproj
-        if: github.event_name == 'push' && steps.backend_build.outcome == 'success'
-        id: version
-        run: |
-          VERSION=$(grep -oPm1 '(?<=<AssemblyVersion>)[^<]+' backend/Moonfin.Server.csproj)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Read target ABI from csproj
-        if: github.event_name == 'push' && steps.backend_build.outcome == 'success'
-        id: abi
-        run: |
-          ABI=$(grep 'Jellyfin.Controller' backend/Moonfin.Server.csproj | grep -oP 'Version="\K[^"]+')
-          echo "abi=${ABI}.0" >> "$GITHUB_OUTPUT"
-
       - name: Package release ZIP
-        if: github.event_name == 'push' && steps.backend_build.outcome == 'success'
+        if: steps.backend_build.outcome == 'success'
         id: package
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TARGET_ABI="${{ steps.abi.outputs.abi }}"
-          PLUGIN_GUID="8c5d0e91-4f2a-4b6d-9e3f-1a7c8d9e0f2b"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          set -euo pipefail
+          OUTPUT=$(bash .github/scripts/package-release.sh)
+          echo "$OUTPUT"
+          while IFS='=' read -r key value; do
+            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+          done <<< "$OUTPUT"
 
-          mkdir -p release
-          cp backend/bin/Release/net8.0/Moonfin.Server.dll release/
-
-          if [ -f frontend/index.html ]; then
-            mkdir -p release/frontend
-            cp -R frontend/. release/frontend/
-            rm -rf release/frontend/node_modules
-            rm -f release/frontend/package.json release/frontend/package-lock.json
-          fi
-
-          cat > release/meta.json <<EOF
-          {
-            "category": "General",
-            "changelog": "",
-            "description": "Moonfin brings a modern TV-style UI to Jellyfin web. Features include: custom navbar, media bar with featured content, Jellyseerr integration, and cross-device settings synchronization.",
-            "guid": "${PLUGIN_GUID}",
-            "name": "Moonfin",
-            "overview": "Custom UI and settings sync for Jellyfin",
-            "owner": "RadicalMuffinMan",
-            "targetAbi": "${TARGET_ABI}",
-            "timestamp": "${TIMESTAMP}",
-            "version": "${VERSION}",
-            "status": "Active",
-            "autoUpdate": true,
-            "assemblies": ["Moonfin.Server.dll"]
-          }
-          EOF
-
-          ZIP_NAME="Moonfin.Server-${VERSION}.zip"
-          cd release && zip -r "../${ZIP_NAME}" . && cd ..
-
-          CHECKSUM=$(md5sum "$ZIP_NAME" | awk '{print toupper($1)}')
-
-          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
-          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Upload build artifact
-        if: github.event_name == 'push' && steps.backend_build.outcome == 'success'
+      - name: Upload plugin artifact
+        if: steps.backend_build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.zip_name }}
           path: ${{ steps.package.outputs.zip_name }}
 
-      - name: Build summary (master)
-        if: github.event_name == 'push' && steps.backend_build.outcome == 'success'
+      - name: Build summary
+        if: steps.backend_build.outcome == 'success'
         run: |
-          echo "## Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Version** | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Checksum (MD5)** | \`${{ steps.package.outputs.checksum }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Artifact** | \`${{ steps.package.outputs.zip_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Version** | \`${{ steps.package.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Target ABI** | \`${{ steps.package.outputs.target_abi }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Checksum (MD5)** | \`${{ steps.package.outputs.checksum }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Artifact** | \`${{ steps.package.outputs.zip_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Download the packaged ZIP from the workflow **Artifacts** section to smoke-test this PR." >> "$GITHUB_STEP_SUMMARY"
+          fi

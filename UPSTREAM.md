@@ -59,4 +59,5 @@ client + plugin updates.
 2. Review upstream changes for API/schema impact against `API-CONTRACT.md`
 3. Cherry-pick or merge selected commits — do not blindly fast-forward
 4. Update this file with the new upstream baseline when syncing
-5. Run plugin CI and coordinate Android TV client testing before release
+5. Run plugin CI (`.github/workflows/build.yml`) and coordinate Android TV client testing before release
+6. Publish fork builds with a Stonecrusher tag (for example `1.9.1-sc1`); see README *Fork CI and releases*
