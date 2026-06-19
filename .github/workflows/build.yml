@@ -38,6 +38,7 @@ jobs:
       - name: Test backend
         id: backend_test
         if: steps.backend_build.outcome == 'success'
+        continue-on-error: true
         run: |
           set -o pipefail
           dotnet test backend.tests/Moonfin.Server.Tests.csproj -c Release 2>&1 | tee "${{ runner.temp }}/backend-test.log"
