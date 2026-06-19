@@ -139,6 +139,8 @@ public class MoonfinUserSettings
     public bool? UserPinEnabled { get; set; }
     [JsonPropertyName("userPinSetupDeclined")]
     public bool? UserPinSetupDeclined { get; set; }
+    [JsonPropertyName("userPinLength")]
+    public int? UserPinLength { get; set; }
     [JsonPropertyName("clientSpecific")]
     public Dictionary<string, string>? ClientSpecific { get; set; }
 

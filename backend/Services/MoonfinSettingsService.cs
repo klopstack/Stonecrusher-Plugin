@@ -419,6 +419,7 @@ public class MoonfinSettingsService
         settings.UserPinHash = null;
         settings.UserPinEnabled = null;
         settings.UserPinSetupDeclined = null;
+        settings.UserPinLength = null;
         settings.ClientSpecific = null;
     }
 
