@@ -35,6 +35,18 @@ jobs:
         if: steps.backend_build.outcome != 'success'
         run: exit 1
 
+      - name: Test backend
+        id: backend_test
+        if: steps.backend_build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          dotnet test backend.tests/Moonfin.Server.Tests.csproj -c Release 2>&1 | tee "${{ runner.temp }}/backend-test.log"
+
+      - name: Fail if tests failed
+        if: steps.backend_build.outcome == 'success' && steps.backend_test.outcome != 'success'
+        run: exit 1
+
       - name: Save build results
         if: always() && github.event_name == 'pull_request'
         run: |
