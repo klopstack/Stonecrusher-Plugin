@@ -151,7 +151,9 @@ public class MoonfinUserSettings
     public bool NeedsMigration => SchemaVersion < 2 && Global == null &&
         (NavbarEnabled != null || MediaBarEnabled != null || MdblistEnabled != null ||
          JellyseerrEnabled != null || TmdbEpisodeRatingsEnabled != null ||
-         NavbarPosition != null || DetailsPageEnabled != null);
+         NavbarPosition != null || DetailsPageEnabled != null ||
+         UserPinHash != null || UserPinEnabled != null || UserPinSetupDeclined != null ||
+         UserPinLength != null);
 
     /// <summary>
     /// Gets the device profile for a given device type, or null if not set.

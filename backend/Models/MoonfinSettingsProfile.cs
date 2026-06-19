@@ -236,7 +236,7 @@ public class MoonfinSettingsProfile
     [JsonPropertyName("userPinSetupDeclined")]
     public bool? UserPinSetupDeclined { get; set; }
 
-    /// <summary>Number of digits in the user's PIN. 0 when unset or unknown.</summary>
+    /// <summary>Number of digits in the user's PIN. Null when unset; clients treat missing as 0.</summary>
     [JsonPropertyName("userPinLength")]
     public int? UserPinLength { get; set; }
 }
