@@ -224,4 +224,15 @@ public class MoonfinSettingsProfile
 
     [JsonPropertyName("genresRowItemFilter")]
     public string? GenresRowItemFilter { get; set; }
+
+    /// <summary>SHA-256 hash of the user's PIN (never log this value).</summary>
+    [JsonPropertyName("userPinHash")]
+    public string? UserPinHash { get; set; }
+
+    [JsonPropertyName("userPinEnabled")]
+    public bool? UserPinEnabled { get; set; }
+
+    /// <summary>True when the user dismissed the first-run PIN setup prompt.</summary>
+    [JsonPropertyName("userPinSetupDeclined")]
+    public bool? UserPinSetupDeclined { get; set; }
 }

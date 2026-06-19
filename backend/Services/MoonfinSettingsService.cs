@@ -416,6 +416,9 @@ public class MoonfinSettingsService
         settings.ThemeMusicOnHomeRows = null;
         settings.ThemeMusicVolume = null;
         settings.BlockedRatings = null;
+        settings.UserPinHash = null;
+        settings.UserPinEnabled = null;
+        settings.UserPinSetupDeclined = null;
         settings.ClientSpecific = null;
     }
 

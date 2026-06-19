@@ -133,6 +133,12 @@ public class MoonfinUserSettings
     public int? ThemeMusicVolume { get; set; }
     [JsonPropertyName("blockedRatings")]
     public List<string>? BlockedRatings { get; set; }
+    [JsonPropertyName("userPinHash")]
+    public string? UserPinHash { get; set; }
+    [JsonPropertyName("userPinEnabled")]
+    public bool? UserPinEnabled { get; set; }
+    [JsonPropertyName("userPinSetupDeclined")]
+    public bool? UserPinSetupDeclined { get; set; }
     [JsonPropertyName("clientSpecific")]
     public Dictionary<string, string>? ClientSpecific { get; set; }
 
