@@ -9,6 +9,15 @@
     "imageUrl": "https://raw.githubusercontent.com/klopstack/Stonecrusher-Plugin/master/backend/assets/logo.png",
     "versions": [
       {
+        "version": "1.9.1.2",
+        "changelog": "Stonecrusher Media Android TV fork release (1.9.1-sc2). See https://github.com/klopstack/Stonecrusher-Plugin/releases.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/klopstack/Stonecrusher-Plugin/releases/download/1.9.1-sc2/Moonfin.Server-1.9.1.0.zip",
+        "checksum": "7C7585C67CD81B47FDE7800F231A4026",
+        "timestamp": "2026-06-19T16:25:42Z",
+        "dependencies": []
+      },
+      {
         "version": "1.9.1.1",
         "changelog": "Stonecrusher Media Android TV fork release (1.9.1-sc1). See https://github.com/klopstack/Stonecrusher-Plugin/releases.",
         "targetAbi": "10.10.0.0",
