@@ -97,7 +97,7 @@ fork baseline.
 | Workflow | Trigger | Result |
 |----------|---------|--------|
 | [Build](.github/workflows/build.yml) | Push/PR to `master`, manual dispatch | Compiles the plugin and uploads `Moonfin.Server-{version}.zip` as a workflow artifact |
-| [Release](.github/workflows/release.yml) | Tag push matching `*-sc*` (for example `1.9.1-sc1`) | Creates a GitHub release with the ZIP and commits an updated `manifest.json` to `master` |
+| [Release](.github/workflows/release.yml) | Tag push matching `*-sc*` (for example `1.9.1-sc1`) | Creates a GitHub release with the ZIP and commits an updated `manifest.json` to `master` (requires a GitHub App token; see [`UPSTREAM.md`](UPSTREAM.md#release-automation-manifest-commits)) |
 
 **Publish a fork release:**
 

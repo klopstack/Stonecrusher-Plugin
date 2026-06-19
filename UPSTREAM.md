@@ -61,3 +61,23 @@ client + plugin updates.
 4. Update this file with the new upstream baseline when syncing
 5. Run plugin CI (`.github/workflows/build.yml`) and coordinate Android TV client testing before release
 6. Publish fork builds with a Stonecrusher tag (for example `1.9.1-sc1`); see README *Fork CI and releases*
+
+## Release automation (manifest commits)
+
+The [Release workflow](.github/workflows/release.yml) commits an updated `manifest.json`
+to `master` after each `*-sc*` tag push. The default `GITHUB_TOKEN` cannot bypass the
+**Protect Main** ruleset (requires a pull request), so the manifest commit step uses a
+GitHub App installation token instead.
+
+### One-time setup
+
+1. Create a [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with
+   **Contents: Read and write** permission.
+2. Install the app on this repository.
+3. Add repository secrets:
+   - `RELEASE_APP_ID` — the app ID (numeric)
+   - `RELEASE_APP_PRIVATE_KEY` — the app's PEM private key
+4. In *Repository settings → Rules → Rulesets*, add the GitHub App to the **Protect Main** ruleset bypass list with **Always allow**.
+
+Without step 4, `git push origin master` in the release workflow will still fail even
+with a valid app token.

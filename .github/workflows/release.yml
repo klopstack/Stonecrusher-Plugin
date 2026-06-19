@@ -86,7 +86,19 @@ jobs:
 
           echo "manifest_version=$MANIFEST_VERSION" >> "$GITHUB_OUTPUT"
 
+      # GITHUB_TOKEN cannot bypass the "Protect Main" ruleset. Use a GitHub App
+      # installation token instead (secrets RELEASE_APP_ID, RELEASE_APP_PRIVATE_KEY).
+      # The app must also be on the ruleset bypass list — see UPSTREAM.md.
+      - name: Create release app token
+        id: release-app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Commit manifest update
+        env:
+          GH_TOKEN: ${{ steps.release-app-token.outputs.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -96,6 +108,9 @@ jobs:
             exit 0
           fi
           git commit -m "Update manifest.json for release ${{ steps.tag.outputs.tag }}"
+          # Remove auth header set by actions/checkout so the push uses the GitHub App token.
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git push origin master
 
       - name: Release summary
