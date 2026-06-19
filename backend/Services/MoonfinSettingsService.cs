@@ -158,6 +158,8 @@ public class MoonfinSettingsService
                 finalSettings = settings;
             }
 
+            MoonfinSensitiveSettings.StripFromUserSettings(finalSettings);
+
             // Update metadata
             finalSettings.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             finalSettings.LastUpdatedBy = clientId ?? "unknown";
@@ -216,6 +218,8 @@ public class MoonfinSettingsService
             {
                 settings.SetProfile(profileName, profile);
             }
+
+            MoonfinSensitiveSettings.StripFromUserSettings(settings);
 
             // Update metadata
             settings.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

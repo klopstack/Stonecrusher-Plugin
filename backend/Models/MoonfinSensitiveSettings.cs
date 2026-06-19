@@ -19,4 +19,32 @@ public static class MoonfinSensitiveSettings
     /// <summary>Returns a safe placeholder for log output when the key is sensitive.</summary>
     public static string RedactValue(string jsonPropertyName, string? value) =>
         IsSensitive(jsonPropertyName) && !string.IsNullOrEmpty(value) ? "[REDACTED]" : value ?? "(null)";
+
+    /// <summary>Removes sensitive values from a profile before server-side persistence.</summary>
+    public static void StripFromProfile(MoonfinSettingsProfile? profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        profile.JellyseerrApiKey = null;
+        profile.MdblistApiKey = null;
+        profile.TmdbApiKey = null;
+        profile.UserPinHash = null;
+    }
+
+    /// <summary>Removes sensitive values from user settings and all nested profiles.</summary>
+    public static void StripFromUserSettings(MoonfinUserSettings settings)
+    {
+        settings.JellyseerrApiKey = null;
+        settings.MdblistApiKey = null;
+        settings.TmdbApiKey = null;
+        settings.UserPinHash = null;
+
+        StripFromProfile(settings.Global);
+        StripFromProfile(settings.Desktop);
+        StripFromProfile(settings.Mobile);
+        StripFromProfile(settings.Tv);
+    }
 }
