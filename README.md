@@ -1,6 +1,13 @@
 <h1 align="center">Moonbase, the server plugin for Moonfin!</h1>
 <h3 align="center">Moonbase is a multi-purpose Jellyfin server plugin that provides structural elements for all Moonfin clients.</h3>
 
+> **Stonecrusher fork:** This repository is a maintained fork of
+> [Moonfin-Client/Plugin](https://github.com/Moonfin-Client/Plugin) for
+> [Stonecrusher Media Android TV](https://github.com/klopstack/StonecrusherMedia-AndroidTV).
+> Route prefixes (`/Moonfin/*`), settings keys, and internal identifiers are
+> unchanged. See [`UPSTREAM.md`](UPSTREAM.md) for the fork baseline and sync
+> workflow, and [`API-CONTRACT.md`](API-CONTRACT.md) for client API dependencies.
+
 ---
 
 <p align="center">
@@ -63,6 +70,22 @@ Optionally: If you install the [File Transformation](https://github.com/IAmParad
    - **URL:** `https://raw.githubusercontent.com/Moonfin-Client/Plugin/refs/heads/master/manifest.json`
 3. Go to Catalog → find **Moonfin** → Install
 4. Restart Jellyfin
+
+### Stonecrusher Media Android TV (this fork)
+
+Use this repository when running the
+[Stonecrusher Media Android TV](https://github.com/klopstack/StonecrusherMedia-AndroidTV)
+client. Upstream `Moonfin-Client/Plugin` releases may drift from what this client
+expects.
+
+**Plugin repository (when releases are published from this fork):**
+
+- **Name:** `Moonfin (Stonecrusher)`
+- **URL:** `https://raw.githubusercontent.com/klopstack/Moonfin-Plugin/refs/heads/master/manifest.json`
+
+Until this fork publishes its own builds, install upstream **v1.9.1** manually or
+from the upstream catalog above. See [`UPSTREAM.md`](UPSTREAM.md) for the recorded
+fork baseline.
 
 ### Manual Install
 
