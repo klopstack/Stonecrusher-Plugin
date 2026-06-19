@@ -108,6 +108,8 @@ jobs:
             exit 0
           fi
           git commit -m "Update manifest.json for release ${{ steps.tag.outputs.tag }}"
+          # Remove auth header set by actions/checkout so the push uses the GitHub App token.
+          git config --unset-all http.https://github.com/.extraheader || true
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git push origin master
 

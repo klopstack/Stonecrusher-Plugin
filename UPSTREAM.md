@@ -73,12 +73,11 @@ GitHub App installation token instead.
 
 1. Create a [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with
    **Contents: Read and write** permission.
-2. Install the app on `klopstack/Stonecrusher-Plugin`.
+2. Install the app on this repository.
 3. Add repository secrets:
    - `RELEASE_APP_ID` — the app ID (numeric)
    - `RELEASE_APP_PRIVATE_KEY` — the app's PEM private key
-4. Add the GitHub App to the **Protect Main** ruleset bypass list with **Always allow**:
-   [settings/rules/17875646](https://github.com/klopstack/Stonecrusher-Plugin/settings/rules/17875646)
+4. In *Repository settings → Rules → Rulesets*, add the GitHub App to the **Protect Main** ruleset bypass list with **Always allow**.
 
 Without step 4, `git push origin master` in the release workflow will still fail even
 with a valid app token.
