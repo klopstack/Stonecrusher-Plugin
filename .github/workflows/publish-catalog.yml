@@ -1,0 +1,18 @@
+name: Publish Plugin Catalog
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Publish Jellyfin Plugin Repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Jellyfin plugin repo
+        uses: Kevinjil/jellyfin-plugin-repo-action@v0.4.3
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
