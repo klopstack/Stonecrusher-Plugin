@@ -107,14 +107,16 @@ See [`UPSTREAM.md`](UPSTREAM.md) for the recorded fork baseline.
 
 **Publish a fork release:**
 
-1. Bump `<AssemblyVersion>` in `backend/Moonfin.Server.csproj` when needed.
+1. Bump the upstream base in `<AssemblyVersion>` / `<FileVersion>` in `backend/Moonfin.Server.csproj` when merging a new upstream release (for example `1.9.2.0`).
 2. Merge changes to `master` and confirm the Build workflow succeeds.
 3. Tag the release commit: `git tag 1.9.1-sc1 && git push origin 1.9.1-sc1`
-4. The Release workflow uploads `Moonfin.Server-{AssemblyVersion}.zip`, publishes the GitHub release, and updates `manifest.json` with the MD5 checksum and fork `sourceUrl`.
+4. The Release workflow stamps the DLL with the fork catalog version (for example `1.9.1.1` for tag `1.9.1-sc1`), uploads `Moonfin.Server-{version}.zip`, publishes the GitHub release, and updates `manifest.json` with the MD5 checksum and fork `sourceUrl`.
 
 Tag suffix `-scN` distinguishes Stonecrusher fork builds from upstream semver tags.
-Installers see catalog versions like `1.9.1.1` for tag `1.9.1-sc1` (assembly
-`1.9.1.0` with the Stonecrusher revision in the fourth component).
+Catalog version `major.minor.build.revision` uses the Stonecrusher revision in the
+fourth component (for example `1.9.1.2` for tag `1.9.1-sc2`). The release
+workflow writes that same value into the DLL assembly version so Jellyfin's
+plugin UI matches the catalog entry after install.
 
 ### Manual Install
 
