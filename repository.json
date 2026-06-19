@@ -8,6 +8,14 @@
     "owner": "klopstack",
     "versions": [
       {
+        "changelog": "## What's Changed\n* Fix Jellyfin plugin UI version mismatch on fork releases by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/12\n\n\n**Full Changelog**: https://github.com/klopstack/Stonecrusher-Plugin/compare/1.9.1-sc2...1.9.1-sc3",
+        "checksum": "6c0f46729cf1d223e783023a4bffbd11",
+        "sourceUrl": "https://github.com/klopstack/Stonecrusher-Plugin/releases/download/1.9.1-sc3/Moonfin.Server-1.9.1.3.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-06-19T17:10:32Z",
+        "version": "1.9.1.3"
+      },
+      {
         "changelog": "## What's Changed\n* Add fork CI and Stonecrusher release workflow by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/2\n* Add per-user PIN sync settings for Android TV by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/1\n* Fix release manifest push against Protect Main ruleset by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/3\n* Publish plugin catalog via GitHub Pages by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/4\n* Add userPinLength to synced per-user PIN settings by @benklop in https://github.com/klopstack/Stonecrusher-Plugin/pull/7\n\n## New Contributors\n* @benklop made their first contribution in https://github.com/klopstack/Stonecrusher-Plugin/pull/2\n\n**Full Changelog**: https://github.com/klopstack/Stonecrusher-Plugin/commits/1.9.1-sc2",
         "checksum": "7c7585c67cd81b47fde7800f231a4026",
         "sourceUrl": "https://github.com/klopstack/Stonecrusher-Plugin/releases/download/1.9.1-sc2/Moonfin.Server-1.9.1.0.zip",
