@@ -11,8 +11,18 @@ jobs:
     name: Publish Jellyfin Plugin Repository
     runs-on: ubuntu-latest
     steps:
-      - name: Jellyfin plugin repo
-        uses: Kevinjil/jellyfin-plugin-repo-action@v0.4.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Publish plugin catalog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/publish-plugin-catalog.py --repository "${{ github.repository }}"

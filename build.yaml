@@ -9,6 +9,7 @@ description: >
   Moonbase is the Moonfin server plugin for Jellyfin, powering settings sync, the Moonfin Web app at /Moonfin/Web/, a built-in theme editor with custom theme APIs, media bar and ratings integrations, and Seerr proxy/SSO with admin defaults and broadcasts across Moonfin clients.
 category: "General"
 owner: "klopstack"
+imageUrl: "https://raw.githubusercontent.com/klopstack/Stonecrusher-Plugin/master/backend/assets/logo.png"
 artifacts:
   - "Moonfin.Server.dll"
 changelog: >

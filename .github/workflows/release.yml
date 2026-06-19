@@ -55,6 +55,14 @@ jobs:
             echo "${key}=${value}" >> "$GITHUB_OUTPUT"
           done <<< "$OUTPUT"
 
+      - name: Ensure build.yaml
+        run: |
+          set -euo pipefail
+          if [ ! -f build.yaml ]; then
+            git fetch origin master
+            git show origin/master:build.yaml > build.yaml
+          fi
+
       - name: Prepare release assets
         run: |
           set -euo pipefail
@@ -69,6 +77,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          overwrite_files: true
           files: |
             ${{ steps.package.outputs.zip_name }}
             ${{ steps.package.outputs.zip_name }}.md5
@@ -158,8 +167,18 @@ jobs:
     needs:
       - release
     steps:
-      - name: Jellyfin plugin repo
-        uses: Kevinjil/jellyfin-plugin-repo-action@v0.4.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Publish plugin catalog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/publish-plugin-catalog.py --repository "${{ github.repository }}"
