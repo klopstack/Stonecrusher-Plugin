@@ -7,6 +7,8 @@ BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 PLUGIN_GUID="8c5d0e91-4f2a-4b6d-9e3f-1a7c8d9e0f2b"
 
+# Version must match the built DLL assembly version. Jellyfin displays the assembly
+# version in the admin UI (not the plugin-catalog version on its own).
 VERSION="${1:-$(grep -oPm1 '(?<=<AssemblyVersion>)[^<]+' "$BACKEND_DIR/Moonfin.Server.csproj")}"
 TARGET_ABI="${2:-$(grep 'Jellyfin.Controller' "$BACKEND_DIR/Moonfin.Server.csproj" | grep -oP 'Version="\K[^"]+').0}"
 TIMESTAMP="${3:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
