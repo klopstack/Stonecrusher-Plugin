@@ -65,19 +65,37 @@ client + plugin updates.
 ## Release automation (manifest commits)
 
 The [Release workflow](.github/workflows/release.yml) commits an updated `manifest.json`
-to `master` after each `*-sc*` tag push. The default `GITHUB_TOKEN` cannot bypass the
-**Protect Main** ruleset (requires a pull request), so the manifest commit step uses a
-GitHub App installation token instead.
+to `master` after each `*-sc*` tag push, uploads release assets with MD5/SHA256
+checksums, and publishes `repository.json` to the `gh-pages` branch via
+[`jellyfin-plugin-repo-action`](https://github.com/Kevinjil/jellyfin-plugin-repo-action)
+(the same pattern used by [auto-parental-tags](https://github.com/klopstack/auto-parental-tags)
+and [Jellyfin.Xtream](https://github.com/klopstack/Jellyfin.Xtream)).
 
-### One-time setup
+Jellyfin plugin repository URL:
+
+`https://klopstack.github.io/Stonecrusher-Plugin/repository.json`
+
+### One-time GitHub Pages setup
+
+After the first catalog publish workflow succeeds:
+
+1. Open **Settings → Pages** on `klopstack/Stonecrusher-Plugin`.
+2. Set **Source** to **Deploy from a branch**, branch **`gh-pages`**, folder **`/ (root)`**.
+3. Save. The catalog URL above should return JSON within a few minutes.
+
+To republish the catalog without a new release, run the
+[Publish Plugin Catalog](.github/workflows/publish-catalog.yml) workflow manually.
+
+### GitHub App setup (manifest commits)
 
 1. Create a [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with
    **Contents: Read and write** permission.
-2. Install the app on this repository.
+2. Install the app on `klopstack/Stonecrusher-Plugin`.
 3. Add repository secrets:
    - `RELEASE_APP_ID` — the app ID (numeric)
    - `RELEASE_APP_PRIVATE_KEY` — the app's PEM private key
-4. In *Repository settings → Rules → Rulesets*, add the GitHub App to the **Protect Main** ruleset bypass list with **Always allow**.
+4. Add the GitHub App to the **Protect Main** ruleset bypass list with **Always allow**:
+   [settings/rules/17875646](https://github.com/klopstack/Stonecrusher-Plugin/settings/rules/17875646)
 
 Without step 4, `git push origin master` in the release workflow will still fail even
 with a valid app token.

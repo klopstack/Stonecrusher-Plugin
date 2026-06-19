@@ -1,0 +1,15 @@
+---
+name: "Moonbase"
+guid: "8c5d0e91-4f2a-4b6d-9e3f-1a7c8d9e0f2b"
+version: "1.9.1.1"
+targetAbi: "10.10.0.0"
+framework: "net8.0"
+overview: "Moonfin server plugin for Jellyfin with web app hosting, settings sync, theming, and Seerr integrations"
+description: >
+  Moonbase is the Moonfin server plugin for Jellyfin, powering settings sync, the Moonfin Web app at /Moonfin/Web/, a built-in theme editor with custom theme APIs, media bar and ratings integrations, and Seerr proxy/SSO with admin defaults and broadcasts across Moonfin clients.
+category: "General"
+owner: "klopstack"
+artifacts:
+  - "Moonfin.Server.dll"
+changelog: >
+  Stonecrusher Media Android TV fork release.

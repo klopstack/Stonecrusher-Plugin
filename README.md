@@ -14,7 +14,7 @@
    <img width="1920" height="1080" alt="Moonbase" src="https://github.com/user-attachments/assets/5d67e8d0-5972-49f2-89d5-376357c8997b" />
 </p>
 
-[![License](https://img.shields.io/github/license/Moonfin-Client/Plugin.svg)](https://github.com/Moonfin-Client/Plugin) [![Release](https://img.shields.io/github/release/klopstack/Moonfin-Plugin.svg)](https://github.com/klopstack/Moonfin-Plugin/releases) [![Build](https://github.com/klopstack/Moonfin-Plugin/actions/workflows/build.yml/badge.svg)](https://github.com/klopstack/Moonfin-Plugin/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/Moonfin-Client/Plugin.svg)](https://github.com/Moonfin-Client/Plugin) [![Release](https://img.shields.io/github/release/klopstack/Stonecrusher-Plugin.svg)](https://github.com/klopstack/Stonecrusher-Plugin/releases) [![Build](https://github.com/klopstack/Stonecrusher-Plugin/actions/workflows/build.yml/badge.svg)](https://github.com/klopstack/Stonecrusher-Plugin/actions/workflows/build.yml)
 
 ## What is Moonbase?
 
@@ -81,23 +81,29 @@ expects.
 **Plugin repository:**
 
 - **Name:** `Moonfin (Stonecrusher)`
-- **URL:** `https://raw.githubusercontent.com/klopstack/Moonfin-Plugin/refs/heads/master/manifest.json`
+- **URL:** `https://klopstack.github.io/Stonecrusher-Plugin/repository.json`
 
-Fork releases are published from [klopstack/Moonfin-Plugin releases](https://github.com/klopstack/Moonfin-Plugin/releases).
-The release workflow prepends a fork-specific manifest entry (for example
-`1.9.1.0-sc1`) pointing at the matching GitHub release asset. Upstream version
-entries remain in `manifest.json` for reference.
+Fork releases are published from [klopstack/Stonecrusher-Plugin releases](https://github.com/klopstack/Stonecrusher-Plugin/releases).
+The release workflow publishes a GitHub Pages plugin catalog (same pattern as
+[auto-parental-tags](https://github.com/klopstack/auto-parental-tags) and
+[Jellyfin.Xtream](https://github.com/klopstack/Jellyfin.Xtream)) and prepends a
+fork-specific catalog entry (for example `1.9.1.1` for tag `1.9.1-sc1`) pointing
+at the matching GitHub release asset. Upstream version entries remain in
+`manifest.json` for reference.
 
-Until the first fork release is tagged, install upstream **v1.9.1** manually or
-from the upstream catalog above. See [`UPSTREAM.md`](UPSTREAM.md) for the recorded
-fork baseline.
+Do **not** use a `raw.githubusercontent.com` URL for the Jellyfin plugin
+repository — Jellyfin expects a GitHub Pages `repository.json` with
+`application/json` responses, and fork catalog versions must be valid
+`major.minor.build.revision` values (no `-sc` suffix).
+
+See [`UPSTREAM.md`](UPSTREAM.md) for the recorded fork baseline.
 
 #### Fork CI and releases
 
 | Workflow | Trigger | Result |
 |----------|---------|--------|
 | [Build](.github/workflows/build.yml) | Push/PR to `master`, manual dispatch | Compiles the plugin and uploads `Moonfin.Server-{version}.zip` as a workflow artifact |
-| [Release](.github/workflows/release.yml) | Tag push matching `*-sc*` (for example `1.9.1-sc1`) | Creates a GitHub release with the ZIP and commits an updated `manifest.json` to `master` (requires a GitHub App token; see [`UPSTREAM.md`](UPSTREAM.md#release-automation-manifest-commits)) |
+| [Release](.github/workflows/release.yml) | Tag push matching `*-sc*` (for example `1.9.1-sc1`) | Creates a GitHub release with the ZIP and checksums, commits an updated `manifest.json` to `master`, and publishes `repository.json` to GitHub Pages (requires a GitHub App token; see [`UPSTREAM.md`](UPSTREAM.md#release-automation-manifest-commits)) |
 
 **Publish a fork release:**
 
@@ -107,11 +113,12 @@ fork baseline.
 4. The Release workflow uploads `Moonfin.Server-{AssemblyVersion}.zip`, publishes the GitHub release, and updates `manifest.json` with the MD5 checksum and fork `sourceUrl`.
 
 Tag suffix `-scN` distinguishes Stonecrusher fork builds from upstream semver tags.
-Installers see manifest versions like `1.9.1.0-sc1` (assembly version plus tag suffix).
+Installers see catalog versions like `1.9.1.1` for tag `1.9.1-sc1` (assembly
+`1.9.1.0` with the Stonecrusher revision in the fourth component).
 
 ### Manual Install
 
-1. Download the latest `Moonfin.Server-x.x.x.x.zip` from [fork Releases](https://github.com/klopstack/Moonfin-Plugin/releases) (Stonecrusher) or [upstream Releases](https://github.com/Moonfin-Client/Plugin/releases)
+1. Download the latest `Moonfin.Server-x.x.x.x.zip` from [fork Releases](https://github.com/klopstack/Stonecrusher-Plugin/releases) (Stonecrusher) or [upstream Releases](https://github.com/Moonfin-Client/Plugin/releases)
 2. Extract to your Jellyfin plugins folder:
    | Platform | Path |
    |----------|------|
